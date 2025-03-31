@@ -1,26 +1,60 @@
-import { View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import {View, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator} from 'react-native';
 import { TextInput, Button, Text } from 'react-native-paper';
 import { useForm, Controller } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
 import React, { useState } from 'react';
 import {ExternalPathString, Href, Link, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
 
-type FormData = {
-    name: string;
-    surname: string;
-    account: string;
+interface FormData {
+    firstname: string;
+    lastname: string;
+    telegram: string;
     password: string;
-};
+}
+
+interface ApiResponse {
+    success?: boolean;
+    message?: string;
+    data?: any;
+    [key: string]: any;
+}
 
 export default function RegisterScreen() {
     const {control, handleSubmit, formState: {errors}} = useForm<FormData>();
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [selectedValue, setSelectedValue] = useState('ресторан');
 
+    const [loading, setLoading] = useState<boolean>(false);
+    const [response, setResponse] = useState<ApiResponse | null>(null);
+    const [error, setError] = useState<String | null>(null);
+
     const router = useRouter();
 
-    const onSubmit = (data: FormData) => {
-        alert(data)
+    const onSubmit = async (data: FormData): Promise<void> => {
+        setResponse(null);
+        setError(null);
+        setLoading(true);
+
+        try {
+            const res = await fetch('http://localhost/api/user/sign-up', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP error: ${res.status}`);
+            }
+
+            const json: ApiResponse = await res.json();
+            setResponse(json);
+        } catch (err) {
+            setError(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const navigateTo = (url: string | { pathname: RelativePathString; params?: UnknownInputParams; } |
@@ -68,9 +102,9 @@ export default function RegisterScreen() {
 
                     <Controller
                         control={control}
-                        name="name"
+                        name="firstname"
                         rules={{
-                            required: "Name is required",
+                            required: "Firstname is required",
                             pattern: {
                                 value: /^[A-Za-zА-Яа-я]+$/,
                                 message: "Only one word without numbers",
@@ -78,22 +112,22 @@ export default function RegisterScreen() {
                         }}
                         render={({ field: { onChange, value } }) => (
                             <TextInput
-                                label="Name"
+                                label="Firstname"
                                 value={value}
                                 onChangeText={onChange}
                                 mode="outlined"
                                 style={styles.input}
-                                error={!!errors.name}
+                                error={!!errors.firstname}
                             />
                         )}
                     />
-                    {errors.name && <Text style={styles.error}>{errors.name.message}</Text>}
+                    {errors.firstname && <Text style={styles.error}>{errors.firstname.message}</Text>}
 
                     <Controller
                         control={control}
-                        name="surname"
+                        name="lastname"
                         rules={{
-                            required: "Surname is required",
+                            required: "Lastname is required",
                             pattern: {
                                 value: /^[A-Za-zА-Яа-я]+$/,
                                 message: "Only one word without numbers",
@@ -101,20 +135,20 @@ export default function RegisterScreen() {
                         }}
                         render={({ field: { onChange, value } }) => (
                             <TextInput
-                                label="Surname"
+                                label="Lastname"
                                 value={value}
                                 onChangeText={onChange}
                                 mode="outlined"
                                 style={styles.input}
-                                error={!!errors.surname}
+                                error={!!errors.lastname}
                             />
                         )}
                     />
-                    {errors.surname && <Text style={styles.error}>{errors.surname.message}</Text>}
+                    {errors.lastname && <Text style={styles.error}>{errors.lastname.message}</Text>}
 
                     <Controller
                         control={control}
-                        name="account"
+                        name="telegram"
                         rules={{
                             required: "Telegram is required",
                             pattern: {
@@ -129,11 +163,11 @@ export default function RegisterScreen() {
                                 onChangeText={onChange}
                                 mode="outlined"
                                 style={styles.input}
-                                error={!!errors.account}
+                                error={!!errors.telegram}
                             />
                         )}
                     />
-                    {errors.account && <Text style={styles.error}>{errors.account.message}</Text>}
+                    {errors.telegram && <Text style={styles.error}>{errors.telegram.message}</Text>}
 
                     <Controller
                         control={control}
@@ -159,14 +193,38 @@ export default function RegisterScreen() {
                     />
                     {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-                    <Button mode="contained" onPress={handleSubmit(onSubmit)} style={styles.button}>
-                        Register
+                    <Button
+                        mode="contained"
+                        onPress={handleSubmit(onSubmit)}
+                        style={styles.button}
+                        disabled={loading}>
+                        {loading ? "Sending..." : "Register"}
                     </Button>
                     <TouchableOpacity>
                         <Link replace href="/login" style={styles.link}>
                             I already have an account
                         </Link>
                     </TouchableOpacity>
+
+                    {loading && (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size={"large"} color={"#0000ff"} />
+                            <Text>Sending data...</Text>
+                        </View>
+                    )}
+
+                    {response && (
+                        <View style={styles.responseContainer}>
+                            <Text style={styles.responseTitle}>Server answer:</Text>
+                            <Text>{JSON.stringify(response, null, 2)}</Text>
+                        </View>
+                    )}
+
+                    {error && (
+                        <View style={styles.errorContainer}>
+                            <Text style={styles.errorText}>Error: {error}</Text>
+                        </View>
+                    )}
                 </View>
             </View>
         </SafeAreaView>
@@ -264,5 +322,29 @@ const styles = StyleSheet.create({
     },
     buttonSpacer: {
         width: 10,
+    },
+    loadingContainer: {
+        marginTop: 20,
+        alignItems: 'center',
+    },
+    responseContainer: {
+        marginTop: 20,
+        padding: 15,
+        backgroundColor: '#e6f7ff',
+        borderRadius: 5,
+    },
+    responseTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    errorContainer: {
+        marginTop: 20,
+        padding: 15,
+        backgroundColor: '#ffebee',
+        borderRadius: 5,
+    },
+    errorText: {
+        color: 'red',
     },
 });
