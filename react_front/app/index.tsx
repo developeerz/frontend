@@ -7,72 +7,73 @@ export default function WelcomeScreen() {
     return (
         <View style={styles.main}>
             <View style={styles.container}>
-                <Image
-                    source={require('../assets/logo.jpg')}
-                    style={styles.image}
-                    resizeMode="contain"
-                />
-
                 <View style={styles.form}>
-                    <Link href={"/login"} asChild>
-                        <Button style={styles.button}>
-                            <Text style={{color: 'white'}}>
-                                Login
-                            </Text>
-                        </Button>
-                    </Link>
-                    <View style={styles.buttonSpacer}/>
-                    <Link href={"/register"} asChild>
-                        <Button style={styles.button}>
-                            <Text style={{color: 'white'}}>
-                                Register
-                            </Text>
-                        </Button>
-                    </Link>
+                    {/*<Image*/}
+                    {/*    source={require('../assets/logo.jpg')}*/}
+                    {/*    style={styles.image}*/}
+                    {/*    resizeMode="contain"*/}
+                    {/*/>*/}
+                    <View style={styles.buttonContainer}>
+                        <Link href={"/login"} asChild>
+                            <Button style={styles.button}>
+                                <Text style={{color: 'white'}}>
+                                    Login
+                                </Text>
+                            </Button>
+                        </Link>
+                        <Link href={"/register"} asChild>
+                            <Button style={styles.button}>
+                                <Text style={{color: 'white'}}>
+                                    Register
+                                </Text>
+                            </Button>
+                        </Link>
+                    </View>
+
                 </View>
             </View>
         </View>
     );
 }
 
-const windowWidth = Dimensions.get('window').width;
-const windowHeight = Dimensions.get('window').height;
-
-const webContW = windowWidth*0.5;
-const webContH = windowHeight*0.6;
-const othContW = windowWidth*0.8;
-const othContH = windowHeight*0.35;
+// const windowWidth = Dimensions.get('window').width;
+// const windowHeight = Dimensions.get('window').height;
+// const webContW = windowWidth*0.5;
+// const webContH = windowHeight*0.6;
+// const othContW = windowWidth*0.8;
+// const othContH = windowHeight*0.35;
 
 const styles = StyleSheet.create({
     main: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f5f5f5',
     },
     container: {
-        width: Platform.OS === "web" ? webContW : othContW,
-        height: Platform.OS === "web" ? webContH : othContH,
-        backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
+        // width: Platform.OS === "web" ? webContW : othContW,
+        // height: Platform.OS === "web" ? webContH : othContH,
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        backgroundColor: '#f5f5f5'
     },
     image: {
-        height: Platform.OS === "web" ? webContH*0.9 : othContH*0.7,
-        width: Platform.OS === "web" ? webContW*0.9 : othContW*0.9,
-        resizeMode: 'contain',
-        flex: 2,
+        // height: Platform.OS === "web" ? webContH*0.9 : othContH*0.7,
+        // width: Platform.OS === "web" ? webContW*0.9 : othContW*0.9,
+        width: '100%',
+        aspectRatio: 1,
+    },
+    buttonContainer: {
+        width: '100%',
+        paddingHorizontal: 20,
+        marginTop: 0,
     },
     form: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        width: '100%',
+        width: '90%',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 3,
+        alignItems: 'center',
+        paddingVertical: 10,
+        maxWidth: 400,
     },
     link: {
         marginTop: 10,
@@ -84,11 +85,10 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     button: {
-        marginTop: 10,
         backgroundColor: 'black',
         borderRadius: 10,
-        width: '100%',
-        flex: 2,
+        marginVertical: 5,
+        alignItems: 'center',
     },
     buttonSpacer: {
         width: 20,
