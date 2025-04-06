@@ -60,7 +60,7 @@ export default function RegisterScreen() {
     const navigateTo = (url: string | { pathname: RelativePathString; params?: UnknownInputParams; } |
                     { pathname: ExternalPathString; params?: UnknownInputParams; } | { pathname: `/`; params?: UnknownInputParams; } |
                     { pathname: `/login`; params?: UnknownInputParams; } | { pathname: `/register`; params?: UnknownInputParams; } |
-                    { pathname: `/_sitemap`; params?: UnknownInputParams; }) => {
+                    { pathname: `/_sitemap`; params?: UnknownInputParams; } | { pathname: `/scheme`; params?: UnknownInputParams; }) => {
         router.replace(url as Href);
     }
 
@@ -80,7 +80,7 @@ export default function RegisterScreen() {
                 </View>
 
                 <View style={styles.buttonGroup}>
-                    <TouchableOpacity style={styles.bookButton}>
+                    <TouchableOpacity style={styles.bookButton} onPress={() => navigateTo('/scheme')}>
                         <Text style={styles.bookButtonText}>Забронировать</Text>
                     </TouchableOpacity>
 

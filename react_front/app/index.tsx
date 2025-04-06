@@ -28,6 +28,13 @@ export default function WelcomeScreen() {
                                 </Text>
                             </Button>
                         </Link>
+                        <Link href={"/scheme"} asChild>
+                            <Button style={styles.button}>
+                                <Text style={{color: 'white'}}>
+                                    Scheme
+                                </Text>
+                            </Button>
+                        </Link>
                     </View>
 
                 </View>
