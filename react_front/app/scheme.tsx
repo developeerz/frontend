@@ -1,8 +1,45 @@
-import {View, StyleSheet, TouchableOpacity, SafeAreaView} from 'react-native';
-import { Text } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import {Button, Dimensions, Modal, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Text} from 'react-native-paper';
+import {Picker} from '@react-native-picker/picker';
+import React, {useState} from 'react';
 import {ExternalPathString, Href, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
+import restData from './../plan.json';
+import Svg, {Circle, Polygon, Rect} from "react-native-svg";
+
+interface Point {
+    x: number;
+    y: number;
+}
+
+interface Shape {
+    type: 'circle' | 'square';
+    radius?: number;
+    size?: number;
+}
+
+interface Table {
+    id: number;
+    position: Point;
+    shape: Shape;
+    capacity: number;
+    status: 'available' | 'reserved' | 'occupied';
+}
+
+interface Floor {
+    floor: number;
+    boundary: Point[];
+    units: string;
+    tables: Table[];
+}
+
+interface Restaurant {
+    name: string;
+    floors: Floor[];
+}
+
+interface RestaurantData {
+    restaurant: Restaurant;
+}
 
 export default function RegisterScreen() {
     const [selectedValue, setSelectedValue] = useState('ресторан');
@@ -15,6 +52,88 @@ export default function RegisterScreen() {
         { pathname: `/_sitemap`; params?: UnknownInputParams; } | { pathname: `/scheme`; params?: UnknownInputParams; }) => {
         router.replace(url as Href);
     }
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+    const [modalPosition, setModalPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    const data : RestaurantData = restData as RestaurantData;
+    const floor = data.restaurant.floors[0];
+    const { boundary, tables } = floor;
+
+    const points = boundary.map((point: Point) => `${point.x},${point.y}`).join(' ');
+    const buildingWidth = Math.max(...boundary.map(p => p.x)) - Math.min(...boundary.map(p => p.x));
+    const buildingHeight = Math.max(...boundary.map(p => p.y)) - Math.min(...boundary.map(p => p.y));
+
+    const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+    const maxSvgWidth = screenWidth / 2;
+    const maxSvgHeight = screenHeight / 2;
+
+    const scaleX = maxSvgWidth / buildingWidth;
+    const scaleY = maxSvgHeight / buildingHeight;
+    const scale = Math.min(scaleX, scaleY);
+    const svgWidth = buildingWidth * scale;
+    const svgHeight = buildingHeight * scale;
+
+    const svgX = (screenWidth - svgWidth) / 2;
+    const svgY = (screenHeight - svgHeight) / 2;
+
+    const renderTable = (table: Table) => {
+        const { position, shape } = table;
+        const fillColor = table.status === 'available' ? 'green' : 'red';
+
+        const handlePress = (event: any) => {
+            const { locationX, locationY } = event.nativeEvent;
+            let modalX = svgX + locationX;
+            let modalY = svgY + locationY;
+            const modalWidth = 200;
+            const modalHeight = 150;
+
+            modalX = Math.min(Math.max(modalX, 0), screenWidth - modalWidth);
+            modalY = Math.min(Math.max(modalY, 0), screenHeight - modalHeight);
+
+            setSelectedTable(table);
+            setModalPosition({ x: modalX, y: modalY });
+            setModalVisible(true);
+        };
+
+        const element =
+            shape.type === 'circle' ? (
+                <Circle
+                    cx={position.x}
+                    cy={position.y}
+                    r={shape.radius}
+                    fill={fillColor}
+                    stroke="black"
+                    strokeWidth="0.5"
+                    scale={scale}
+                />
+            ) : (
+                <Rect
+                    x={position.x - (shape.size! / 2)}
+                    y={position.y - (shape.size! / 2)}
+                    width={shape.size}
+                    height={shape.size}
+                    fill={fillColor}
+                    stroke="black"
+                    strokeWidth="0.5"
+                    scale={scale}
+                />
+            );
+
+        return (
+            <TouchableOpacity key={table.id} onPress={handlePress} style={StyleSheet.absoluteFill}>
+                {element}
+            </TouchableOpacity>
+        );
+    };
+
+    const handleBook = () => {
+        if (selectedTable) {
+            alert(`Table ${selectedTable.id} booked!`);
+            setModalVisible(false);
+        }
+    };
 
     return (
         <SafeAreaView style={styles.main}>
@@ -48,7 +167,51 @@ export default function RegisterScreen() {
                 </View>
             </View>
 
+            <View style={styles.footer}>
+                <Svg width={svgWidth} height={svgHeight}>
+                    <Polygon
+                        points={points}
+                        fill="none"
+                        stroke="black"
+                        strokeWidth="2"
+                        scale={scale}
+                    />
+                    {tables.map(renderTable)}
+                </Svg>
 
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <TouchableOpacity
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setModalVisible(false)}
+                    >
+                        <View
+                            style={[
+                                styles.modalContent,
+                                { top: modalPosition.y, left: modalPosition.x },
+                            ]}
+                        >
+                            {selectedTable && (
+                                <>
+                                    <Text style={styles.modalText}>Table: {selectedTable.id}</Text>
+                                    <Text style={styles.modalText}>Status: {selectedTable.status}</Text>
+                                    <Text style={styles.modalText}>Capacity: {selectedTable.capacity}</Text>
+                                    <Button
+                                        title="Book"
+                                        onPress={handleBook}
+                                        disabled={selectedTable.status !== 'available'}
+                                    />
+                                </>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            </View>
 
         </SafeAreaView>
     );
@@ -57,6 +220,31 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
     main: {
         flex: 1,
+    },
+    footer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        position: 'absolute',
+        width: 200,
+        padding: 16,
+        backgroundColor: 'white',
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalText: {
+        fontSize: 16,
+        marginBottom: 8,
     },
     header: {
         flexDirection: 'row',

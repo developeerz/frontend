@@ -1,0 +1,51 @@
+{
+  "restaurant": {
+    "name": "Example Restaurant",
+    "floors": [
+      {
+        "floor": 1,
+        "boundary": [
+          {"x": 10, "y": 0},
+          {"x": 30, "y": 0},
+          {"x": 40, "y": 17.32},
+          {"x": 30, "y": 34.64},
+          {"x": 10, "y": 34.64},
+          {"x": 0, "y": 17.32}
+        ],
+        "units": "meters",
+        "tables": [
+          {
+            "id": 1,
+            "position": {"x": 15, "y": 10},
+            "shape": {
+              "type": "circle",
+              "radius": 1.5
+            },
+            "capacity": 4,
+            "status": "available"
+          },
+          {
+            "id": 2,
+            "position": {"x": 25, "y": 25},
+            "shape": {
+              "type": "square",
+              "size": 2
+            },
+            "capacity": 6,
+            "status": "reserved"
+          },
+          {
+            "id": 3,
+            "position": {"x": 20, "y": 15},
+            "shape": {
+              "type": "circle",
+              "radius": 1
+            },
+            "capacity": 2,
+            "status": "available"
+          }
+        ]
+      }
+    ]
+  }
+}
