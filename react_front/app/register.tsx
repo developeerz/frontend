@@ -48,6 +48,11 @@ export default function RegisterScreen() {
                 throw new Error(`HTTP error: ${res.status}`);
             }
 
+            if (res.status === 204) {
+                setResponse({success: true, message: 'Registration successful'});
+                return;
+            }
+
             const json: ApiResponse = await res.json();
             setResponse(json);
         } catch (err) {
