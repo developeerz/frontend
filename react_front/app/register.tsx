@@ -36,7 +36,7 @@ export default function RegisterScreen() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost/api/user/sign-up', {
+            const res = await fetch('http://localhost/api/web-gateway/user/sign-up', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

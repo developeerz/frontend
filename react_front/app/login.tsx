@@ -34,7 +34,7 @@ export default function LoginScreen() {
         setLoading(true);
 
         try {
-            const res = await fetch('http://localhost/api/user/login', {
+            const res = await fetch('http://localhost/api/web-gateway/user/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
