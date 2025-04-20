@@ -1,9 +1,9 @@
 import {ExternalPathString, Href, Link, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
-import {View, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator} from 'react-native';
-import {TextInput, Button, Text} from 'react-native-paper';
-import {useForm, Controller} from 'react-hook-form';
+import {ActivityIndicator, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Button, Text, TextInput} from 'react-native-paper';
+import {Controller, useForm} from 'react-hook-form';
 import {Picker} from "@react-native-picker/picker";
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 
 interface FormData {
     telegram: string;

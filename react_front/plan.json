@@ -5,45 +5,99 @@
       {
         "floor": 1,
         "boundary": [
-          {"x": 10, "y": 0},
-          {"x": 30, "y": 0},
-          {"x": 40, "y": 17.32},
-          {"x": 30, "y": 34.64},
-          {"x": 10, "y": 34.64},
-          {"x": 0, "y": 17.32}
+          {"x": 0, "y": 0},
+          {"x": 42, "y": 0},
+          {"x": 42, "y": 35},
+          {"x": 0, "y": 35}
         ],
         "units": "meters",
         "tables": [
           {
             "id": 1,
-            "position": {"x": 15, "y": 10},
+            "position": {"x": 7, "y": 5},
             "shape": {
               "type": "circle",
-              "radius": 1.5
+              "radius": 3
             },
             "capacity": 4,
             "status": "available"
           },
           {
             "id": 2,
-            "position": {"x": 25, "y": 25},
+            "position": {"x": 21, "y": 5},
             "shape": {
-              "type": "square",
-              "size": 2
+              "type": "circle",
+              "radius": 3
             },
-            "capacity": 6,
+            "capacity": 4,
             "status": "reserved"
           },
           {
             "id": 3,
-            "position": {"x": 20, "y": 15},
+            "position": {"x": 35, "y": 5},
             "shape": {
               "type": "circle",
-              "radius": 1
+              "radius": 3
             },
-            "capacity": 2,
+            "capacity": 4,
             "status": "available"
-          }
+          },
+            {
+                "id": 4,
+                "position": {"x": 7, "y": 30},
+                "shape": {
+                "type": "circle",
+                "radius": 3
+                },
+                "capacity": 4,
+                "status": "available"
+            },
+            {
+                "id": 5,
+                "position": {"x": 21, "y": 30},
+                "shape": {
+                "type": "circle",
+                "radius": 3
+                },
+                "capacity": 4,
+                "status": "available"
+            },
+            {
+                "id": 6,
+                "position": {"x": 35, "y": 30},
+                "shape": {
+                "type": "circle",
+                "radius": 3
+                },
+                "capacity": 4,
+                "status": "available"
+            },
+          {
+            "id": 7,
+            "position": {
+              "x": 14,
+              "y": 17
+            },
+            "shape": {
+              "type": "square",
+              "size": 6
+            },
+            "capacity": 6,
+            "status": "available"
+          },
+            {
+                "id": 8,
+                "position": {
+                "x": 28,
+                "y": 17
+                },
+                "shape": {
+                "type": "square",
+                "size": 6
+                },
+                "capacity": 6,
+                "status": "available"
+            }
         ]
       }
     ]

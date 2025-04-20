@@ -60,6 +60,7 @@ export default function RegisterScreen() {
     const data : RestaurantData = restData as RestaurantData;
     const floor = data.restaurant.floors[0];
     const { boundary, tables } = floor;
+    if (!boundary.length) return null;
 
     const points = boundary.map((point: Point) => `${point.x},${point.y}`).join(' ');
     const buildingWidth = Math.max(...boundary.map(p => p.x)) - Math.min(...boundary.map(p => p.x));
@@ -78,17 +79,55 @@ export default function RegisterScreen() {
     const svgX = (screenWidth - svgWidth) / 2;
     const svgY = (screenHeight - svgHeight) / 2;
 
-    const renderTable = (table: Table) => {
+    const minX = Math.min(...boundary.map(p => p.x));
+    const minY = Math.min(...boundary.map(p => p.y));
+
+    const renderTableSvg = (table: Table) => {
         const { position, shape } = table;
+        const adjustedX = position.x - minX;
+        const adjustedY = position.y - minY;
         const fillColor = table.status === 'available' ? 'green' : 'red';
 
-        const handlePress = (event: any) => {
-            const { locationX, locationY } = event.nativeEvent;
-            let modalX = svgX + locationX;
-            let modalY = svgY + locationY;
+        return shape.type === 'circle' ? (
+            <Circle
+                key={table.id}
+                cx={adjustedX}
+                cy={adjustedY}
+                r={shape.radius}
+                fill={fillColor}
+                stroke="black"
+                strokeWidth="0.2"
+                scale={scale}
+            />
+        ) : (
+            <Rect
+                key={table.id}
+                x={adjustedX - (shape.size! / 2)}
+                y={adjustedY - (shape.size! / 2)}
+                width={shape.size}
+                height={shape.size}
+                fill={fillColor}
+                stroke="black"
+                strokeWidth="0.2"
+                scale={scale}
+            />
+        );
+    };
+
+    const renderTableTouchable = (table: Table) => {
+        const { position, shape } = table;
+
+        const adjustedX = position.x - minX;
+        const adjustedY = position.y - minY;
+        const touchX = svgX + adjustedX * scale;
+        const touchY = svgY + adjustedY * scale - 30;
+        const touchSize = (shape.type === 'circle' ? shape.radius! * 2 : shape.size!) * scale;
+
+        const handlePress = () => {
+            let modalX = touchX;
+            let modalY = touchY;
             const modalWidth = 200;
             const modalHeight = 150;
-
             modalX = Math.min(Math.max(modalX, 0), screenWidth - modalWidth);
             modalY = Math.min(Math.max(modalY, 0), screenHeight - modalHeight);
 
@@ -97,40 +136,28 @@ export default function RegisterScreen() {
             setModalVisible(true);
         };
 
-        const element =
-            shape.type === 'circle' ? (
-                <Circle
-                    cx={position.x}
-                    cy={position.y}
-                    r={shape.radius}
-                    fill={fillColor}
-                    stroke="black"
-                    strokeWidth="0.5"
-                    scale={scale}
-                />
-            ) : (
-                <Rect
-                    x={position.x - (shape.size! / 2)}
-                    y={position.y - (shape.size! / 2)}
-                    width={shape.size}
-                    height={shape.size}
-                    fill={fillColor}
-                    stroke="black"
-                    strokeWidth="0.5"
-                    scale={scale}
-                />
-            );
-
         return (
-            <TouchableOpacity key={table.id} onPress={handlePress} style={StyleSheet.absoluteFill}>
-                {element}
-            </TouchableOpacity>
+            <TouchableOpacity
+                key={table.id}
+                style={{
+                    position: 'absolute',
+                    left: touchX - touchSize / 2,
+                    top: touchY - touchSize / 2,
+                    width: touchSize,
+                    height: touchSize,
+                    backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                }}
+                onPress={handlePress}
+            />
         );
     };
 
     const handleBook = () => {
         if (selectedTable) {
             alert(`Table ${selectedTable.id} booked!`);
+            data.restaurant.floors[0].tables = tables.map(table =>
+                table.id === selectedTable.id ? {...table, status: 'reserved' as 'reserved'} : table
+            );
             setModalVisible(false);
         }
     };
@@ -171,13 +198,15 @@ export default function RegisterScreen() {
                 <Svg width={svgWidth} height={svgHeight}>
                     <Polygon
                         points={points}
-                        fill="none"
+                        fill="gray"
                         stroke="black"
-                        strokeWidth="2"
+                        strokeWidth="0.2"
                         scale={scale}
                     />
-                    {tables.map(renderTable)}
+                    {tables.map(renderTableSvg)}
                 </Svg>
+
+                {tables.map(renderTableTouchable)}
 
                 <Modal
                     animationType="fade"
@@ -204,6 +233,7 @@ export default function RegisterScreen() {
                                     <Button
                                         title="Book"
                                         onPress={handleBook}
+                                        color={'red'}
                                         disabled={selectedTable.status !== 'available'}
                                     />
                                 </>
@@ -215,7 +245,7 @@ export default function RegisterScreen() {
 
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     main: {

@@ -1,7 +1,7 @@
-import {View, StyleSheet, TouchableOpacity, SafeAreaView} from 'react-native';
-import { Text } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import {SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {Text} from 'react-native-paper';
+import {Picker} from '@react-native-picker/picker';
+import React, {useState} from 'react';
 import {ExternalPathString, Href, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
 
 export default function RegisterScreen() {
