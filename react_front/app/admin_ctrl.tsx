@@ -82,10 +82,10 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     bookButton: {
-        backgroundColor: '#e0a0a0',
+        backgroundColor: '#ff0000',
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 5,
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     registerButtonText: {
         color: 'white',

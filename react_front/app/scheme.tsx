@@ -145,7 +145,7 @@ export default function RegisterScreen() {
                     top: touchY - touchSize / 2,
                     width: touchSize,
                     height: touchSize,
-                    backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                    // backgroundColor: 'rgba(0, 0, 255, 0.2)',
                 }}
                 onPress={handlePress}
             />
@@ -198,7 +198,7 @@ export default function RegisterScreen() {
                 <Svg width={svgWidth} height={svgHeight}>
                     <Polygon
                         points={points}
-                        fill="gray"
+                        fill={'#e0e0e0'}
                         stroke="black"
                         strokeWidth="0.2"
                         scale={scale}
@@ -227,9 +227,9 @@ export default function RegisterScreen() {
                         >
                             {selectedTable && (
                                 <>
-                                    <Text style={styles.modalText}>Table: {selectedTable.id}</Text>
-                                    <Text style={styles.modalText}>Status: {selectedTable.status}</Text>
+                                    {/*<Text style={styles.modalText}>Table: {selectedTable.id}</Text>*/}
                                     <Text style={styles.modalText}>Capacity: {selectedTable.capacity}</Text>
+                                    <Text style={styles.modalText}>Status: {selectedTable.status}</Text>
                                     <Button
                                         title="Book"
                                         onPress={handleBook}
@@ -300,24 +300,25 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     bookButton: {
-        backgroundColor: '#e0a0a0',
+        backgroundColor: '#ffffff',
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 5,
         marginHorizontal: 10,
+        borderWidth: 1,
     },
     bookButtonText: {
-        color: 'white',
+        color: 'black',
     },
     registerButton: {
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     registerButtonText: {
         color: 'white',

@@ -14,17 +14,17 @@ export default function WelcomeScreen() {
                     {/*    resizeMode="contain"*/}
                     {/*/>*/}
                     <View style={styles.buttonContainer}>
-                        <Link href={"/login"} asChild>
-                            <Button style={styles.button}>
-                                <Text style={{color: 'white'}}>
-                                    Login
-                                </Text>
-                            </Button>
-                        </Link>
                         <Link href={"/register"} asChild>
                             <Button style={styles.button}>
                                 <Text style={{color: 'white'}}>
                                     Register
+                                </Text>
+                            </Button>
+                        </Link>
+                        <Link href={"/login"} asChild>
+                            <Button style={styles.button}>
+                                <Text style={{color: 'white'}}>
+                                    Login
                                 </Text>
                             </Button>
                         </Link>

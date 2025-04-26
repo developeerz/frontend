@@ -48,6 +48,8 @@ export default function LoginScreen() {
                 setError(null);
             } else if (res.status === 400) {
                 setError('Bad request');
+            } else if (res.status === 401) {
+                setError('Unauthorized');
             } else if (res.status === 404) {
                 setError('Not found');
             } else if (res.status === 500) {
@@ -111,7 +113,7 @@ export default function LoginScreen() {
                         rules={{
                             required: "Telegram is required",
                             pattern: {
-                                value: /^@?[a-zA-Z][a-zA-Z0-9_]{3,31}$/,
+                                value: /^@[a-zA-Z][a-zA-Z0-9_]{3,31}$/,
                                 message: "Enter a valid @telegram",
                             },
                         }}
@@ -175,7 +177,7 @@ export default function LoginScreen() {
                     {response && (
                         <View style={styles.responseContainer}>
                             <Text style={styles.responseTitle}>Server answer:</Text>
-                            <Text>{JSON.stringify(response, null, 2)}</Text>
+                            <Text>{response.message}</Text>
                         </View>
                     )}
 
@@ -220,7 +222,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     bookButton: {
-        backgroundColor: '#e0a0a0',
+        backgroundColor: '#ff0000',
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 5,
@@ -234,7 +236,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     registerButtonText: {
         color: 'white',
@@ -277,7 +279,7 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 10,
         backgroundColor: 'black',
-        borderRadius: 10,
+        borderRadius: 3,
     },
     buttonSpacer: {
         width: 10,
