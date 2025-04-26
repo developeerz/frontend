@@ -42,12 +42,19 @@ export default function LoginScreen() {
                 body: JSON.stringify(data),
             });
 
-            if (!res.ok) {
-                throw new Error(`HTTP error: ${res.status}`);
+            if (res.ok && res.status === 200) {
+                const json : ApiResponse = {success : true, message: 'Login successful'};
+                setResponse(json);
+                setError(null);
+            } else if (res.status === 400) {
+                setError('Bad request');
+            } else if (res.status === 404) {
+                setError('Not found');
+            } else if (res.status === 500) {
+                setError('Server error');
+            } else {
+                setError('Unexpected error occurred');
             }
-
-            const json: ApiResponse = await res.json();
-            setResponse(json);
         } catch (err) {
             setError(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
         } finally {
