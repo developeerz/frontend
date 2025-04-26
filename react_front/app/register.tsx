@@ -1,4 +1,4 @@
-import {ActivityIndicator, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Linking, Modal, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Button, Text, TextInput} from 'react-native-paper';
 import {Controller, useForm} from 'react-hook-form';
 import {Picker} from '@react-native-picker/picker';
@@ -28,7 +28,45 @@ export default function RegisterScreen() {
     const [response, setResponse] = useState<ApiResponse | null>(null);
     const [error, setError] = useState<String | null>(null);
 
+    const [modalVisible, setModalVisible] = useState<boolean>(false);
+    const [modalMessage, setModalMessage] = useState<string>('');
+    const [telegramId, setTelegram] = useState<string>('');
+
     const router = useRouter();
+
+    const handleVerifyCode = async () => {
+        try {
+            const sendJson = {
+                telegram: telegramId,
+                code: parseInt(modalMessage, 10)
+            };
+
+            const response = await fetch('http://localhost/api/web-gateway/user/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sendJson),
+            });
+
+            if (response.ok && response.status === 200) {
+                const json : ApiResponse = {success : true, message: 'Verification successful'};
+                setResponse(json);
+                setError(null);
+            } else if (response.status === 400) {
+                setError('Bad request');
+            } else if (response.status === 500) {
+                setError('Server error');
+            } else {
+                setError('Unexpected error occurred');
+            }
+        } catch (err) {
+            setError(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        }
+
+        setModalVisible(false);
+        setModalMessage('');
+    };
 
     const onSubmit = async (data: FormData): Promise<void> => {
         setResponse(null);
@@ -45,9 +83,9 @@ export default function RegisterScreen() {
             });
 
             if (res.ok && res.status === 200) {
-                const json : ApiResponse = {success : true, message: 'Registration successful'};
-                setResponse(json);
                 setError(null);
+                setTelegram(data.telegram);
+                setModalVisible(true);
             } else if (res.status === 400) {
                 setError('Bad request');
             } else if (res.status === 500) {
@@ -62,12 +100,21 @@ export default function RegisterScreen() {
         }
     };
 
+    const openExternalLink = async () => {
+        const url = 'https://t.me/GoRestorioBot';
+        const supported = await Linking.canOpenURL(url);
+
+        if (supported) {
+            await Linking.openURL(url);
+        }
+    };
+
     const navigateTo = (url: string | { pathname: RelativePathString; params?: UnknownInputParams; } |
                     { pathname: ExternalPathString; params?: UnknownInputParams; } | { pathname: `/`; params?: UnknownInputParams; } |
                     { pathname: `/login`; params?: UnknownInputParams; } | { pathname: `/register`; params?: UnknownInputParams; } |
                     { pathname: `/_sitemap`; params?: UnknownInputParams; } | { pathname: `/scheme`; params?: UnknownInputParams; }) => {
         router.replace(url as Href);
-    }
+    };
 
     return (
         <SafeAreaView style={styles.main}>
@@ -157,7 +204,7 @@ export default function RegisterScreen() {
                         rules={{
                             required: "Telegram is required",
                             pattern: {
-                                value: /^@?[a-zA-Z][a-zA-Z0-9_]{3,31}$/,
+                                value: /^@[a-zA-Z][a-zA-Z0-9_]{3,31}$/,
                                 message: "Enter a valid @telegram",
                             },
                         }}
@@ -221,7 +268,7 @@ export default function RegisterScreen() {
                     {response && (
                         <View style={styles.responseContainer}>
                             <Text style={styles.responseTitle}>Server answer:</Text>
-                            <Text>{JSON.stringify(response, null, 2)}</Text>
+                            <Text>{response.message}</Text>
                         </View>
                     )}
 
@@ -230,6 +277,47 @@ export default function RegisterScreen() {
                             <Text style={styles.errorText}>Error: {error}</Text>
                         </View>
                     )}
+
+                    <Modal
+                        animationType={"slide"}
+                        transparent={true}
+                        visible={modalVisible}
+                        onRequestClose={() => setModalVisible(false)}
+                        >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.modalContent}>
+                                <Text style={styles.title}>Введите проверочный код</Text>
+
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Код"
+                                    value={modalMessage}
+                                    onChangeText={setModalMessage}
+                                    keyboardType={"numeric"}
+                                    maxLength={7}
+                                />
+
+                                <TouchableOpacity onPress={openExternalLink}>
+                                    <Text style={styles.linkText}>Перейти к боту за кодом</Text>
+                                </TouchableOpacity>
+
+                                <View style={styles.buttonContainer}>
+                                    <TouchableOpacity
+                                        style={[styles.button, styles.cancelButton]}
+                                        onPress={() => setModalVisible(false)}
+                                    >
+                                        <Text style={styles.buttonText}>Отмена</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={styles.button}
+                                        onPress={handleVerifyCode}
+                                    >
+                                        <Text style={styles.buttonText}>Подтвердить</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
             </View>
         </SafeAreaView>
@@ -239,6 +327,32 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
     main: {
         flex: 1,
+    },
+    linkText: {
+        color: '#007AFF',
+        textDecorationLine: 'underline',
+        marginBottom: 20,
+    },
+    cancelButton: {
+        backgroundColor: '#FF3B30',
+        borderRadius: 3,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Полупрозрачный фон
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
     },
     header: {
         flexDirection: 'row',
@@ -264,10 +378,10 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 5,
         borderWidth: 1,
-        backgroundColor: '#808080',
+        backgroundColor: '#000000',
     },
     bookButton: {
-        backgroundColor: '#e0a0a0',
+        backgroundColor: '#ff0000',
         paddingHorizontal: 15,
         paddingVertical: 8,
         borderRadius: 5,
@@ -310,6 +424,7 @@ const styles = StyleSheet.create({
     title: {
         textAlign: 'center',
         marginBottom: 20,
+        fontSize: 24,
     },
     input: {
         marginBottom: 10,
@@ -323,7 +438,8 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 10,
         backgroundColor: 'black',
-        borderRadius: 10,
+        borderRadius: 3,
+        padding: 10,
     },
     buttonSpacer: {
         width: 10,
