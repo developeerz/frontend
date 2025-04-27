@@ -40,7 +40,7 @@ export default function LoginScreen() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data),
-                credentials: "include",
+                // credentials: "include",
             });
 
             if (res.ok && res.status === 200) {
