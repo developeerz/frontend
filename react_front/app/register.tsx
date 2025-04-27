@@ -80,6 +80,7 @@ export default function RegisterScreen() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(data),
+                credentials: "include",
             });
 
             if (res.ok && res.status === 200) {
