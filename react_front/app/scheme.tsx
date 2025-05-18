@@ -1,12 +1,12 @@
 import {Button, Dimensions, Modal, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from 'react-native-paper';
 import {Picker} from '@react-native-picker/picker';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {ExternalPathString, Href, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
 import restData from './../plan.json';
 import Svg, {Circle, Polygon, Rect} from "react-native-svg";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {useAuth} from "@/app/AuthContext";
+import axios from "axios";
 
 interface Point {
     x: number;
@@ -61,7 +61,8 @@ export default function RegisterScreen() {
 
     const data : RestaurantData = restData as RestaurantData;
     const floor = data.restaurant.floors[0];
-    const { boundary, tables } = floor;
+    const { boundary } = floor;
+    let tables: Table[] = [];
     if (!boundary.length) return null;
 
     const points = boundary.map((point: Point) => `${point.x},${point.y}`).join(' ');
@@ -166,6 +167,44 @@ export default function RegisterScreen() {
         }
     };
 
+    const [tablesData, setTablesData] = useState<Table[] | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const res = await axios.get('http://localhost/api/web-gateway/tables?restaurant_id=1');
+
+                console.log("wasd");
+                const fetchedTables = res.data.tables;
+                console.log(fetchedTables);
+
+                tables = fetchedTables.map((table: any) => ({
+                    id: table.table_id,
+                    position: {
+                        x: table.x,
+                        y: table.y,
+                    },
+                    shape: {
+                        type: table.shape,
+                        radius: table.shape === 'circle' ? 3 : undefined,
+                        size: table.shape === 'square' ? 6 : undefined,
+                    },
+                    capacity: table.seats_number,
+                    status: 'available' as 'available',
+                }));
+
+                console.log(tables);
+                setTablesData(tables);
+            } catch (err) {
+                console.log(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    console.log(token)
+
     return (
         <SafeAreaView style={styles.main}>
             <View style={styles.header}>
@@ -207,10 +246,10 @@ export default function RegisterScreen() {
                         strokeWidth="0.2"
                         scale={scale}
                     />
-                    {tables.map(renderTableSvg)}
+                    {tablesData && tablesData.map(renderTableSvg)}
                 </Svg>
 
-                {tables.map(renderTableTouchable)}
+                {tablesData && tablesData.map(renderTableTouchable)}
 
                 <Modal
                     animationType="fade"
