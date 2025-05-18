@@ -4,7 +4,7 @@ import {Button, Text, TextInput} from 'react-native-paper';
 import {Controller, useForm} from 'react-hook-form';
 import {Picker} from "@react-native-picker/picker";
 import React, {useState} from 'react';
-import { useAuth } from './AuthContext';
+import {useAuth} from './AuthContext';
 
 interface FormData {
     telegram: string;
