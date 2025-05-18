@@ -1,12 +1,4 @@
-import {
-    Button,
-    Dimensions,
-    FlatList,
-    Modal, SafeAreaView,
-    StyleSheet,
-    TouchableOpacity,
-    View
-} from 'react-native';
+import {Button, Dimensions, FlatList, Modal, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
 import {Text} from 'react-native-paper';
 import {Picker} from '@react-native-picker/picker';
 import React, {useEffect, useState} from 'react';
@@ -20,6 +12,7 @@ import DatePicker from 'react-date-picker';
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
+import {format} from 'date-fns';
 
 interface FreeTimeRange {
     id: string;
@@ -50,10 +43,12 @@ function isoToFreeTimeRange(
                 throw new Error(`Invalid toIso format: ${toIso}`);
             }
 
-            const toDateStr = toDate.toISOString().split('T')[0];
+            const offset = toDate.getTimezoneOffset();
+            const adjustedToDate = new Date(toDate.getTime() - offset * 60 * 1000);
+            const toDateStr = adjustedToDate.toISOString().split('T')[0];
 
-            const toHours = toDate.getUTCHours();
-            const toMinutes = toDate.getUTCMinutes();
+            const toHours = adjustedToDate.getUTCHours();
+            const toMinutes = adjustedToDate.getUTCMinutes();
             const toTime = toHours === 23 && toMinutes === 59
                 ? null
                 : `${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}`;
@@ -72,11 +67,13 @@ function isoToFreeTimeRange(
             throw new Error(`Invalid fromIso format: ${fromIso}`);
         }
 
-        const fromDateStr = fromDate.toISOString().split('T')[0];
+        const offset = fromDate.getTimezoneOffset();
+        const adjustedFromDate = new Date(fromDate.getTime() - offset * 60 * 1000);
+        const fromDateStr = adjustedFromDate.toISOString().split('T')[0];
 
-        const fromHours = fromDate.getUTCHours();
-        const fromMinutes = fromDate.getUTCMinutes();
-        const fromTime = fromHours === 0 && fromMinutes === 0
+        const fromHours = adjustedFromDate.getUTCHours();
+        const fromMinutes = adjustedFromDate.getUTCMinutes();
+        const fromTime = fromHours === 23 && fromMinutes === 59
             ? null
             : `${fromHours.toString().padStart(2, '0')}:${fromMinutes.toString().padStart(2, '0')}`;
 
@@ -95,10 +92,11 @@ function isoToFreeTimeRange(
             throw new Error(`Invalid toIso format: ${toIso}`);
         }
 
-        const toDateStr = toDate.toISOString().split('T')[0];
+        const adjustedToDate = new Date(toDate.getTime() - offset * 60 * 1000);
+        const toDateStr = adjustedToDate.toISOString().split('T')[0];
 
-        const toHours = toDate.getUTCHours();
-        const toMinutes = toDate.getUTCMinutes();
+        const toHours = adjustedToDate.getUTCHours();
+        const toMinutes = adjustedToDate.getUTCMinutes();
         const toTime = toHours === 23 && toMinutes === 59
             ? null
             : `${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}`;
@@ -120,7 +118,7 @@ function freeTimeRangeToIso(range: FreeTimeRange): { fromIso: string | null; toI
 
     const fromHours = range.from ? parseInt(range.from.split(':')[0]) : 0;
     const fromMinutes = range.from ? parseInt(range.from.split(':')[1]) : 0;
-    const fromDate = new Date(`${range.fromDate}T${fromHours.toString().padStart(2, '0')}:${fromMinutes.toString().padStart(2, '0')}:00Z`);
+    const fromDate = new Date(`${range.fromDate}T${fromHours.toString().padStart(2, '0')}:${fromMinutes.toString().padStart(2, '0')}:00`);
     const fromIso = fromDate.toISOString();
 
     if (!range.toDate || !range.to) {
@@ -133,7 +131,7 @@ function freeTimeRangeToIso(range: FreeTimeRange): { fromIso: string | null; toI
 
     const toHours = range.to ? parseInt(range.to.split(':')[0]) : 23;
     const toMinutes = range.to ? parseInt(range.to.split(':')[1]) : 59;
-    const toDate = new Date(`${range.toDate}T${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}:00Z`);
+    const toDate = new Date(`${range.toDate}T${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}:00`);
     const toIso = toDate.toISOString();
 
     return { fromIso, toIso };
@@ -289,7 +287,14 @@ export default function RegisterScreen() {
     let { token, setToken } = useAuth();
 
     const [freeRanges, setFreeRanges] = useState<FreeTimeRange[]>([]);
+
     const [timeModalVisible, setTimeModalVisible] = useState(false);
+    const [parametersModalVisible, setParametersModalVisible] = useState(false);
+
+    const [newParamFromDate, setNewParamFromDate] = useState<Date | null>(new Date());
+    const [newParamFromTime, setNewParamFromTime] = useState('10:00');
+    const [newParamToDate, setNewParamToDate] = useState<Date | null>(new Date());
+    const [newParamToTime, setNewParamToTime] = useState('11:00');
 
     const [newFromDate, setNewFromDate] = useState<Date | null>(new Date());
     const [newFromTime, setNewFromTime] = useState('10:00');
@@ -298,8 +303,24 @@ export default function RegisterScreen() {
 
     const formatDate = (date: Date | null): string => {
         if (!date) return '';
-        return date.toISOString().split('T')[0];
+        return format(date, 'yyyy-MM-dd');
     };
+
+    const checkOrderDatesWithTimes = (date1: Date | null, time1: string, date2: Date | null, time2: string): boolean => {
+        if (!date1 || !date2) return false;
+
+        const date1Str = formatDate(date1);
+        const date2Str = formatDate(date2);
+        const [hour1, min1] = time1.split(':').map(Number);
+        const [hour2, min2] = time2.split(':').map(Number);
+
+        const dateTime1 = new Date(date1Str);
+        dateTime1.setHours(hour1, min1);
+        const dateTime2 = new Date(date2Str);
+        dateTime2.setHours(hour2, min2);
+
+        return dateTime1 < dateTime2;
+    }
 
     const isTimeRangeAvailable = (
         fromDate: Date | null,
@@ -309,6 +330,10 @@ export default function RegisterScreen() {
     ): boolean => {
         if (!fromDate || !toDate) return false;
 
+        if (!checkOrderDatesWithTimes(fromDate, fromTime, toDate, toTime)) {
+            return false;
+        }
+
         const fromDateStr = formatDate(fromDate);
         const toDateStr = formatDate(toDate);
         const [fromHour, fromMin] = fromTime.split(':').map(Number);
@@ -316,17 +341,9 @@ export default function RegisterScreen() {
         const fromMinutes = fromHour * 60 + fromMin;
         const toMinutes = toHour * 60 + toMin;
 
-        const fromDateTime = new Date(fromDateStr);
-        fromDateTime.setHours(fromHour, fromMin);
-        const toDateTime = new Date(toDateStr);
-        toDateTime.setHours(toHour, toMin);
-        if (fromDateTime >= toDateTime) {
-            return false;
-        }
-
         for (const range of freeRanges) {
-            new Date(range.fromDate);
-            new Date(range.toDate);
+            const rangeFromDate = new Date(range.fromDate);
+            const rangeToDate = new Date(range.toDate);
 
             const rangeFromMinutes = range.from
                 ? parseInt(range.from.split(':')[0]) * 60 + parseInt(range.from.split(':')[1])
@@ -338,8 +355,7 @@ export default function RegisterScreen() {
 
             const isDateInRange =
                 fromDateStr >= range.fromDate &&
-                toDateStr <= range.toDate &&
-                (fromDateStr !== toDateStr || range.fromDate === range.toDate);
+                toDateStr <= range.toDate;
 
             if (isDateInRange) {
                 if (
@@ -356,6 +372,11 @@ export default function RegisterScreen() {
 
     const handleBookTable = async () => {
         try {
+            if (!isTimeRangeAvailable(newFromDate, newFromTime, newToDate, newToTime)) {
+                alert('Selected time range is not available');
+                return;
+            }
+
             const url = `http://localhost/api/web-gateway/reservations/new-reservation`;
 
             let segment: FreeTimeRange = {
@@ -403,6 +424,7 @@ export default function RegisterScreen() {
                 }
             } else if (res.status === 200) {
                 const data = await res.json();
+                setTimeModalVisible(false);
                 console.log(data);
             } else {
                 console.error('Failed to book table:', res.status, res.statusText);
@@ -418,15 +440,37 @@ export default function RegisterScreen() {
     const renderFreeRange = ({ item }: { item: FreeTimeRange }) => (
         <View style={styles.freeItem}>
             <Text style={styles.freeText}>
-                от {item.fromDate} {item.from || '00:00'} до {item.toDate} {item.to || '23:59'}
+                от {item.fromDate} {item.from || '∞'} до {item.toDate} {item.to || '∞'}
             </Text>
         </View>
     );
 
-    const handleBook = async () => {
+    const handleParamsBookTable = () => {
+        const segment: FreeTimeRange = {
+            id: '0',
+            fromDate: formatDate(newParamFromDate),
+            from: newParamFromTime,
+            toDate: formatDate(newParamToDate),
+            to: newParamToTime,
+        }
+
+        if (!checkOrderDatesWithTimes(newParamFromDate, newParamFromTime, newParamToDate, newParamToTime)) {
+            alert('Invalid date or time range');
+            return;
+        }
+
+        const { fromIso, toIso } = freeTimeRangeToIso(segment);
+
+        if (fromIso && toIso) {
+            handleBook(fromIso, toIso);
+            setParametersModalVisible(false)
+        }
+    }
+
+    const handleBook = async (startStr: string, endStr: string) => {
         if (selectedTable) {
             try {
-                const url = `http://localhost/api/web-gateway/tables/${selectedTable.id}/free-times`;
+                const url = `http://localhost/api/web-gateway/tables/${selectedTable.id}/free-times?start=${startStr}&end=${endStr}`;
                 const res = await fetch(url, {
                     method: 'GET',
                     headers: {
@@ -451,7 +495,7 @@ export default function RegisterScreen() {
 
                     setFreeRanges(freeTimes);
                 } else {
-                    setFreeRanges([]);
+                    setFreeRanges([isoToFreeTimeRange('0', startStr, endStr)]);
                 }
 
                 setTimeModalVisible(true);
@@ -567,7 +611,10 @@ export default function RegisterScreen() {
                                     { token && (
                                         <Button
                                             title="Book"
-                                            onPress={handleBook}
+                                            onPress={() => {
+                                                setParametersModalVisible(true);
+                                                setModalVisible(false);
+                                            }}
                                             color={'red'}
                                             disabled={selectedTable.status !== 'available'}
                                         />
@@ -653,6 +700,72 @@ export default function RegisterScreen() {
                                 <TouchableOpacity
                                     style={[styles.actionButton, styles.cancelButton]}
                                     onPress={() => setTimeModalVisible(false)}
+                                >
+                                    <Text style={styles.actionButtonText}>Отмена</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={parametersModalVisible}
+                    onRequestClose={() => setParametersModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.title}>Введите параметры</Text>
+
+                            {/* Выбор даты и времени "От" */}
+                            <Text style={styles.label}>Дата начала:</Text>
+                            <DatePicker
+                                onChange={(value) => setNewParamFromDate(value as Date | null)}
+                                value={newParamFromDate}
+                                format="yyyy-MM-dd"
+                            />
+                            <Text style={styles.label}>Время начала:</Text>
+                            <TimePicker
+                                onChange={value => {
+                                    if (typeof value === 'string') {
+                                        setNewParamFromTime(value);
+                                    }
+                                }}
+                                value={newParamFromTime}
+                                disableClock={true}
+                                format="HH:mm"
+                            />
+
+                            {/* Выбор даты и времени "До" */}
+                            <Text style={styles.label}>Дата окончания:</Text>
+                            <DatePicker
+                                onChange={(value) => setNewParamToDate(value as Date | null)}
+                                value={newParamToDate}
+                                format="yyyy-MM-dd"
+                            />
+                            <Text style={styles.label}>Время окончания:</Text>
+                            <TimePicker
+                                onChange={value => {
+                                    if (typeof value === 'string') {
+                                        setNewParamToTime(value);
+                                    }
+                                }}
+                                value={newParamToTime}
+                                disableClock={true}
+                                format="HH:mm"
+                            />
+
+                            <View style={styles.buttonContainer}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.bookButton]}
+                                    onPress={handleParamsBookTable}
+                                >
+                                    <Text style={styles.actionButtonText}>Ок</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.cancelButton]}
+                                    onPress={() => setParametersModalVisible(false)}
                                 >
                                     <Text style={styles.actionButtonText}>Отмена</Text>
                                 </TouchableOpacity>
