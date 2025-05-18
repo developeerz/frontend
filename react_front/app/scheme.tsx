@@ -5,6 +5,8 @@ import React, {useState} from 'react';
 import {ExternalPathString, Href, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
 import restData from './../plan.json';
 import Svg, {Circle, Polygon, Rect} from "react-native-svg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {useAuth} from "@/app/AuthContext";
 
 interface Point {
     x: number;
@@ -152,6 +154,8 @@ export default function RegisterScreen() {
         );
     };
 
+    const { token } = useAuth();
+
     const handleBook = () => {
         if (selectedTable) {
             alert(`Table ${selectedTable.id} booked!`);
@@ -230,12 +234,19 @@ export default function RegisterScreen() {
                                     {/*<Text style={styles.modalText}>Table: {selectedTable.id}</Text>*/}
                                     <Text style={styles.modalText}>Capacity: {selectedTable.capacity}</Text>
                                     <Text style={styles.modalText}>Status: {selectedTable.status}</Text>
-                                    <Button
-                                        title="Book"
-                                        onPress={handleBook}
-                                        color={'red'}
-                                        disabled={selectedTable.status !== 'available'}
-                                    />
+
+                                    { token && (
+                                        <Button
+                                            title="Book"
+                                            onPress={handleBook}
+                                            color={'red'}
+                                            disabled={selectedTable.status !== 'available'}
+                                        />
+                                    )}
+
+                                    { !token && (
+                                        <Text style={styles.modalText}>Please login to book a table</Text>
+                                    )}
                                 </>
                             )}
                         </View>

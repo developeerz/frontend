@@ -4,6 +4,7 @@ import {Button, Text, TextInput} from 'react-native-paper';
 import {Controller, useForm} from 'react-hook-form';
 import {Picker} from "@react-native-picker/picker";
 import React, {useState} from 'react';
+import { useAuth } from './AuthContext';
 
 interface FormData {
     telegram: string;
@@ -27,6 +28,7 @@ export default function LoginScreen() {
     const [error, setError] = useState<String | null>(null);
 
     const router = useRouter();
+    const { setToken } = useAuth();
 
     const onSubmit = async (data: FormData): Promise<void> => {
         setResponse(null);
@@ -44,7 +46,14 @@ export default function LoginScreen() {
             });
 
             if (res.ok && res.status === 200) {
-                const json : ApiResponse = {success : true, message: 'Login successful'};
+                const resJson: ApiResponse = await res.json();
+                const token = resJson.access;
+
+                if (token) {
+                    setToken(token);
+                }
+
+                const json : ApiResponse = {success : true, message: 'Login successful', data: token};
                 setResponse(json);
                 setError(null);
             } else if (res.status === 400) {
