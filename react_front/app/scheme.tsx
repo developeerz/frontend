@@ -1,12 +1,143 @@
-import {Button, Dimensions, Modal, SafeAreaView, StyleSheet, TouchableOpacity, View} from 'react-native';
+import {
+    Button,
+    Dimensions,
+    FlatList,
+    Modal, SafeAreaView,
+    StyleSheet,
+    TouchableOpacity,
+    View
+} from 'react-native';
 import {Text} from 'react-native-paper';
 import {Picker} from '@react-native-picker/picker';
 import React, {useEffect, useState} from 'react';
 import {ExternalPathString, Href, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
 import restData from './../plan.json';
 import Svg, {Circle, Polygon, Rect} from "react-native-svg";
-import {useAuth} from "@/app/AuthContext";
+import {useAuth} from "./AuthContext";
 import axios from "axios";
+import TimePicker from 'react-time-picker';
+import DatePicker from 'react-date-picker';
+import 'react-time-picker/dist/TimePicker.css';
+import 'react-date-picker/dist/DatePicker.css';
+import 'react-calendar/dist/Calendar.css';
+
+interface FreeTimeRange {
+    id: string;
+    fromDate: string;
+    from: string | null;
+    toDate: string;
+    to: string | null;
+}
+
+function isoToFreeTimeRange(
+    id: string,
+    fromIso: string | null,
+    toIso: string | null,
+): FreeTimeRange {
+
+    if (fromIso === null) {
+        if (toIso === null) {
+            return {
+                id,
+                fromDate: '',
+                from: null,
+                toDate: '',
+                to: null,
+            };
+        } else {
+            const toDate = new Date(toIso);
+            if (isNaN(toDate.getTime())) {
+                throw new Error(`Invalid toIso format: ${toIso}`);
+            }
+
+            const toDateStr = toDate.toISOString().split('T')[0];
+
+            const toHours = toDate.getUTCHours();
+            const toMinutes = toDate.getUTCMinutes();
+            const toTime = toHours === 23 && toMinutes === 59
+                ? null
+                : `${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}`;
+
+            return {
+                id,
+                fromDate: '',
+                from: null,
+                toDate: toDateStr,
+                to: toTime,
+            }
+        }
+    } else {
+        const fromDate = new Date(fromIso);
+        if (isNaN(fromDate.getTime())) {
+            throw new Error(`Invalid fromIso format: ${fromIso}`);
+        }
+
+        const fromDateStr = fromDate.toISOString().split('T')[0];
+
+        const fromHours = fromDate.getUTCHours();
+        const fromMinutes = fromDate.getUTCMinutes();
+        const fromTime = fromHours === 0 && fromMinutes === 0
+            ? null
+            : `${fromHours.toString().padStart(2, '0')}:${fromMinutes.toString().padStart(2, '0')}`;
+
+        if (toIso === null) {
+            return {
+                id,
+                fromDate: fromDateStr,
+                from: fromTime,
+                toDate: '',
+                to: null,
+            };
+        }
+
+        const toDate = new Date(toIso);
+        if (isNaN(toDate.getTime())) {
+            throw new Error(`Invalid toIso format: ${toIso}`);
+        }
+
+        const toDateStr = toDate.toISOString().split('T')[0];
+
+        const toHours = toDate.getUTCHours();
+        const toMinutes = toDate.getUTCMinutes();
+        const toTime = toHours === 23 && toMinutes === 59
+            ? null
+            : `${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}`;
+
+        return {
+            id,
+            fromDate: fromDateStr,
+            from: fromTime,
+            toDate: toDateStr,
+            to: toTime,
+        };
+    }
+}
+
+function freeTimeRangeToIso(range: FreeTimeRange): { fromIso: string | null; toIso: string | null } {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(range.fromDate)) {
+        throw new Error(`Invalid fromDate format: ${range.fromDate}`);
+    }
+
+    const fromHours = range.from ? parseInt(range.from.split(':')[0]) : 0;
+    const fromMinutes = range.from ? parseInt(range.from.split(':')[1]) : 0;
+    const fromDate = new Date(`${range.fromDate}T${fromHours.toString().padStart(2, '0')}:${fromMinutes.toString().padStart(2, '0')}:00Z`);
+    const fromIso = fromDate.toISOString();
+
+    if (!range.toDate || !range.to) {
+        return { fromIso, toIso: null };
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(range.toDate)) {
+        throw new Error(`Invalid toDate format: ${range.toDate}`);
+    }
+
+    const toHours = range.to ? parseInt(range.to.split(':')[0]) : 23;
+    const toMinutes = range.to ? parseInt(range.to.split(':')[1]) : 59;
+    const toDate = new Date(`${range.toDate}T${toHours.toString().padStart(2, '0')}:${toMinutes.toString().padStart(2, '0')}:00Z`);
+    const toIso = toDate.toISOString();
+
+    return { fromIso, toIso };
+}
 
 interface Point {
     x: number;
@@ -155,14 +286,179 @@ export default function RegisterScreen() {
         );
     };
 
-    const { token } = useAuth();
+    let { token, setToken } = useAuth();
 
-    const handleBook = () => {
+    const [freeRanges, setFreeRanges] = useState<FreeTimeRange[]>([]);
+    const [timeModalVisible, setTimeModalVisible] = useState(false);
+
+    const [newFromDate, setNewFromDate] = useState<Date | null>(new Date());
+    const [newFromTime, setNewFromTime] = useState('10:00');
+    const [newToDate, setNewToDate] = useState<Date | null>(new Date());
+    const [newToTime, setNewToTime] = useState('11:00');
+
+    const formatDate = (date: Date | null): string => {
+        if (!date) return '';
+        return date.toISOString().split('T')[0];
+    };
+
+    const isTimeRangeAvailable = (
+        fromDate: Date | null,
+        fromTime: string,
+        toDate: Date | null,
+        toTime: string,
+    ): boolean => {
+        if (!fromDate || !toDate) return false;
+
+        const fromDateStr = formatDate(fromDate);
+        const toDateStr = formatDate(toDate);
+        const [fromHour, fromMin] = fromTime.split(':').map(Number);
+        const [toHour, toMin] = toTime.split(':').map(Number);
+        const fromMinutes = fromHour * 60 + fromMin;
+        const toMinutes = toHour * 60 + toMin;
+
+        const fromDateTime = new Date(fromDateStr);
+        fromDateTime.setHours(fromHour, fromMin);
+        const toDateTime = new Date(toDateStr);
+        toDateTime.setHours(toHour, toMin);
+        if (fromDateTime >= toDateTime) {
+            return false;
+        }
+
+        for (const range of freeRanges) {
+            new Date(range.fromDate);
+            new Date(range.toDate);
+
+            const rangeFromMinutes = range.from
+                ? parseInt(range.from.split(':')[0]) * 60 + parseInt(range.from.split(':')[1])
+                : 0;
+
+            const rangeToMinutes = range.to
+                ? parseInt(range.to.split(':')[0]) * 60 + parseInt(range.to.split(':')[1])
+                : 23 * 60 + 59;
+
+            const isDateInRange =
+                fromDateStr >= range.fromDate &&
+                toDateStr <= range.toDate &&
+                (fromDateStr !== toDateStr || range.fromDate === range.toDate);
+
+            if (isDateInRange) {
+                if (
+                    fromMinutes >= rangeFromMinutes &&
+                    toMinutes <= rangeToMinutes
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    };
+
+    const handleBookTable = async () => {
+        try {
+            const url = `http://localhost/api/web-gateway/reservations/new-reservation`;
+
+            let segment: FreeTimeRange = {
+                id: '0',
+                fromDate: formatDate(newFromDate),
+                from: newFromTime,
+                toDate: formatDate(newToDate),
+                to: newToTime,
+            };
+
+            const { fromIso, toIso } = freeTimeRangeToIso(segment);
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    reservation_time_from: fromIso,
+                    reservation_time_to: toIso,
+                    table_id: selectedTable?.id,
+                }),
+            });
+
+            if (res.status === 401) {
+                const refresh = await fetch('http://localhost/api/web-gateway/auth/refresh', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: "include"
+                });
+
+                if (refresh.status === 200) {
+                    const refreshData = await refresh.json();
+
+                    if (refreshData && refreshData.access) {
+                        setToken(refreshData.access);
+                    }
+                } else {
+                    console.error('Failed to refresh token:', refresh.status, refresh.statusText);
+                    alert('Failed to refresh token');
+                    return;
+                }
+            } else if (res.status === 200) {
+                const data = await res.json();
+                console.log(data);
+            } else {
+                console.error('Failed to book table:', res.status, res.statusText);
+                alert('Failed to book table');
+                return;
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to book table');
+        }
+    };
+
+    const renderFreeRange = ({ item }: { item: FreeTimeRange }) => (
+        <View style={styles.freeItem}>
+            <Text style={styles.freeText}>
+                от {item.fromDate} {item.from || '00:00'} до {item.toDate} {item.to || '23:59'}
+            </Text>
+        </View>
+    );
+
+    const handleBook = async () => {
         if (selectedTable) {
-            alert(`Table ${selectedTable.id} booked!`);
-            data.restaurant.floors[0].tables = tables.map(table =>
-                table.id === selectedTable.id ? {...table, status: 'reserved' as 'reserved'} : table
-            );
+            try {
+                const url = `http://localhost/api/web-gateway/tables/${selectedTable.id}/free-times`;
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!res.ok) {
+                    throw new Error('Failed to fetch free times');
+                }
+
+                const jsonData = await res.json();
+
+                if (jsonData) {
+                    const freeTimes = jsonData.map((item: any, index: number) => {
+                        return isoToFreeTimeRange(
+                            `${index}`,
+                            item.free_from,
+                            item.free_until,
+                        );
+                    });
+
+                    setFreeRanges(freeTimes);
+                } else {
+                    setFreeRanges([]);
+                }
+
+                setTimeModalVisible(true);
+            } catch (error) {
+                console.error(error);
+            }
+
             setModalVisible(false);
         }
     };
@@ -173,10 +469,7 @@ export default function RegisterScreen() {
         const fetchData = async () => {
             try {
                 const res = await axios.get('http://localhost/api/web-gateway/tables?restaurant_id=1');
-
-                console.log("wasd");
                 const fetchedTables = res.data.tables;
-                console.log(fetchedTables);
 
                 tables = fetchedTables.map((table: any) => ({
                     id: table.table_id,
@@ -193,17 +486,14 @@ export default function RegisterScreen() {
                     status: 'available' as 'available',
                 }));
 
-                console.log(tables);
                 setTablesData(tables);
             } catch (err) {
-                console.log(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                console.error(`Error occurred: ${err instanceof Error ? err.message : 'Unknown error'}`);
             }
         };
 
         fetchData();
     }, []);
-
-    console.log(token)
 
     return (
         <SafeAreaView style={styles.main}>
@@ -291,6 +581,85 @@ export default function RegisterScreen() {
                         </View>
                     </TouchableOpacity>
                 </Modal>
+
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={timeModalVisible}
+                    onRequestClose={() => setTimeModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.title}>Бронирование стола</Text>
+
+                            {/* Свободные временные промежутки */}
+                            <Text style={styles.subtitle}>Свободные промежутки:</Text>
+                            {freeRanges.length > 0 ? (
+                                <FlatList
+                                    data={freeRanges}
+                                    renderItem={renderFreeRange}
+                                    keyExtractor={(item) => item.id}
+                                    style={styles.freeList}
+                                />
+                            ) : (
+                                <Text style={styles.noFreeSlots}>Всё свободно</Text>
+                            )}
+
+                            {/* Выбор даты и времени "От" */}
+                            <Text style={styles.label}>Дата начала:</Text>
+                            <DatePicker
+                                onChange={(value) => setNewFromDate(value as Date | null)}
+                                value={newFromDate}
+                                format="yyyy-MM-dd"
+                            />
+                            <Text style={styles.label}>Время начала:</Text>
+                            <TimePicker
+                                onChange={value => {
+                                    if (typeof value === 'string') {
+                                        setNewFromTime(value);
+                                    }
+                                }}
+                                value={newFromTime}
+                                disableClock={true}
+                                format="HH:mm"
+                            />
+
+                            {/* Выбор даты и времени "До" */}
+                            <Text style={styles.label}>Дата окончания:</Text>
+                            <DatePicker
+                                onChange={(value) => setNewToDate(value as Date | null)}
+                                value={newToDate}
+                                format="yyyy-MM-dd"
+                            />
+                            <Text style={styles.label}>Время окончания:</Text>
+                            <TimePicker
+                                onChange={value => {
+                                    if (typeof value === 'string') {
+                                        setNewToTime(value);
+                                    }
+                                }}
+                                value={newToTime}
+                                disableClock={true}
+                                format="HH:mm"
+                            />
+
+                            <View style={styles.buttonContainer}>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.bookButton]}
+                                    onPress={handleBookTable}
+                                >
+                                    <Text style={styles.actionButtonText}>Ок</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.actionButton, styles.cancelButton]}
+                                    onPress={() => setTimeModalVisible(false)}
+                                >
+                                    <Text style={styles.actionButtonText}>Отмена</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </View>
 
         </SafeAreaView>
@@ -298,6 +667,15 @@ export default function RegisterScreen() {
 };
 
 const styles = StyleSheet.create({
+    bookedItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    bookedText: {
+        fontSize: 14,
+        color: '#333',
+    },
     main: {
         flex: 1,
     },
@@ -413,7 +791,89 @@ const styles = StyleSheet.create({
         backgroundColor: 'black',
         borderRadius: 10,
     },
+    noFreeSlots: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    freeList: {
+        maxHeight: 100,
+        marginBottom: 10,
+    },
     buttonSpacer: {
         width: 10,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    subtitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: 10,
+        marginBottom: 5,
+    },
+    bookedList: {
+        maxHeight: 100,
+        marginBottom: 10,
+    },
+    noBookings: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: '500',
+        marginTop: 10,
+        marginBottom: 5,
+    },
+    timeButton: {
+        backgroundColor: '#f0f0f0',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    timeText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    actionButton: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginHorizontal: 5,
+    },
+    cancelButton: {
+        backgroundColor: '#FF3B30',
+    },
+    actionButtonText: {
+        color: '#1a1a1a',
+        fontSize: 16,
+    },
+    timePicker: {
+        backgroundColor: '#f0f0f0',
+        padding: 12,
+        borderRadius: 8,
+        width: '100%',
+    },
+    freeItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    freeText: {
+        fontSize: 14,
+        color: '#333',
     },
 });
