@@ -306,8 +306,10 @@ export default function RegisterScreen() {
         return format(date, 'yyyy-MM-dd');
     };
 
-    const checkOrderDatesWithTimes = (date1: Date | null, time1: string, date2: Date | null, time2: string): boolean => {
+    const checkOrderDatesWithTimes = (date1: Date | null, time1: string | null,
+                                      date2: Date | null, time2: string | null): boolean => {
         if (!date1 || !date2) return false;
+        if (!time1 || !time2) return false;
 
         const date1Str = formatDate(date1);
         const date2Str = formatDate(date2);
@@ -336,34 +338,14 @@ export default function RegisterScreen() {
 
         const fromDateStr = formatDate(fromDate);
         const toDateStr = formatDate(toDate);
-        const [fromHour, fromMin] = fromTime.split(':').map(Number);
-        const [toHour, toMin] = toTime.split(':').map(Number);
-        const fromMinutes = fromHour * 60 + fromMin;
-        const toMinutes = toHour * 60 + toMin;
+
+        const fromDateTime = new Date(fromDateStr);
+        const toDateTime = new Date(toDateStr);
 
         for (const range of freeRanges) {
-            const rangeFromDate = new Date(range.fromDate);
-            const rangeToDate = new Date(range.toDate);
-
-            const rangeFromMinutes = range.from
-                ? parseInt(range.from.split(':')[0]) * 60 + parseInt(range.from.split(':')[1])
-                : 0;
-
-            const rangeToMinutes = range.to
-                ? parseInt(range.to.split(':')[0]) * 60 + parseInt(range.to.split(':')[1])
-                : 23 * 60 + 59;
-
-            const isDateInRange =
-                fromDateStr >= range.fromDate &&
-                toDateStr <= range.toDate;
-
-            if (isDateInRange) {
-                if (
-                    fromMinutes >= rangeFromMinutes &&
-                    toMinutes <= rangeToMinutes
-                ) {
-                    return true;
-                }
+            if (checkOrderDatesWithTimes(new Date(range.fromDate), range.from, fromDateTime, fromTime) &&
+                checkOrderDatesWithTimes(toDateTime, toTime, new Date(range.toDate), range.to)) {
+                return true;
             }
         }
 
