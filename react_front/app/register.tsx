@@ -23,7 +23,7 @@ interface ApiResponse {
 export default function RegisterScreen() {
     const {control, handleSubmit, formState: {errors}} = useForm<FormData>();
     const [passwordVisible, setPasswordVisible] = useState(false);
-    const [selectedValue, setSelectedValue] = useState('ресторан');
+    const [selectedValue, setSelectedValue] = useState('restaurant');
 
     const [loading, setLoading] = useState<boolean>(false);
     const [response, setResponse] = useState<ApiResponse | null>(null);
@@ -54,7 +54,7 @@ export default function RegisterScreen() {
             });
 
             if (response.ok && response.status === 200) {
-                const json : ApiResponse = {success : true, message: 'Verification successful'};
+                const json : ApiResponse = {success : true, message: 'Verification successful! You can now log in.'};
                 setResponse(json);
                 setError(null);
             } else if (response.status === 400) {
@@ -130,15 +130,15 @@ export default function RegisterScreen() {
                         style={styles.picker}
                         onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
                     >
-                        <Picker.Item label="Ресторан" value="ресторан" />
-                        <Picker.Item label="Кафе" value="кафе" />
-                        <Picker.Item label="Бар" value="бар" />
+                        <Picker.Item label="Restaurant" value="restaurant" />
+                        <Picker.Item label="Cafe" value="cafe" />
+                        <Picker.Item label="Pub" value="pub" />
                     </Picker>}
                 </View>
 
                 <View style={styles.buttonGroup}>
                     <TouchableOpacity style={styles.bookButton} onPress={() => navigateTo('/scheme')}>
-                        <Text style={styles.bookButtonText}>Забронировать</Text>
+                        <Text style={styles.bookButtonText}>Book</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.headerButton} onPress={() => navigateTo('/login')}>
@@ -148,14 +148,14 @@ export default function RegisterScreen() {
                     <View style={styles.buttonSpacer}/>
 
                     <TouchableOpacity style={styles.registerButton}>
-                        <Text style={styles.registerButtonText}>Register</Text>
+                        <Text style={styles.registerButtonText}>Registration</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
             <View style={styles.container}>
                 <View style={styles.form}>
-                    <Text variant="headlineLarge" style={styles.title}>Register</Text>
+                    <Text variant="headlineLarge" style={styles.title}>Registration</Text>
 
                     <Controller
                         control={control}
@@ -255,7 +255,7 @@ export default function RegisterScreen() {
                         onPress={handleSubmit(onSubmit)}
                         style={styles.button}
                         disabled={loading}>
-                        {loading ? "Sending..." : "Register"}
+                        {loading ? "Sending..." : "Registration"}
                     </Button>
                     <TouchableOpacity>
                         <Link replace href="/login" style={styles.link}>
