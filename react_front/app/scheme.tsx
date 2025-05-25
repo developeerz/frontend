@@ -174,7 +174,7 @@ interface RestaurantData {
 }
 
 export default function RegisterScreen() {
-    const [selectedValue, setSelectedValue] = useState('ресторан');
+    const [selectedValue, setSelectedValue] = useState('restaurant');
 
     const router = useRouter();
 
@@ -389,6 +389,8 @@ export default function RegisterScreen() {
             });
 
             if (res.status === 401) {
+                console.error('Token expired, trying to refresh...');
+
                 const refresh = await fetch('http://localhost/api/web-gateway/auth/refresh', {
                     method: 'GET',
                     headers: {
@@ -402,10 +404,11 @@ export default function RegisterScreen() {
 
                     if (refreshData && refreshData.access) {
                         setToken(refreshData.access);
+                        console.log('Token refreshed successfully!');
                     }
                 } else {
                     console.error('Failed to refresh token:', refresh.status, refresh.statusText);
-                    alert('Failed to refresh token');
+                    alert('Failed to refresh token. Please login again.');
                     return;
                 }
             } else if (res.status === 200) {
@@ -414,12 +417,12 @@ export default function RegisterScreen() {
                 console.log(data);
             } else {
                 console.error('Failed to book table:', res.status, res.statusText);
-                alert('Failed to book table');
+                alert('Failed to book table. Please try again later.');
                 return;
             }
         } catch (error) {
             console.error(error);
-            alert('Failed to book table');
+            alert('Failed to book table. Please try again later.');
         }
     };
 
@@ -535,15 +538,15 @@ export default function RegisterScreen() {
                             style={styles.picker}
                             onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
                         >
-                            <Picker.Item label="Ресторан" value="ресторан" />
-                            <Picker.Item label="Кафе" value="кафе" />
-                            <Picker.Item label="Бар" value="бар" />
+                            <Picker.Item label="Restaurant" value="restaurant" />
+                            <Picker.Item label="Cafe" value="cafe" />
+                            <Picker.Item label="Pub" value="pub" />
                         </Picker>}
                 </View>
 
                 <View style={styles.buttonGroup}>
                     <TouchableOpacity style={styles.bookButton}>
-                        <Text style={styles.bookButtonText}>Забронировать</Text>
+                        <Text style={styles.bookButtonText}>Book</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.headerButton} onPress={() => navigateTo('/login')}>
@@ -553,7 +556,7 @@ export default function RegisterScreen() {
                     <View style={styles.buttonSpacer}/>
 
                     <TouchableOpacity style={styles.registerButton} onPress={() => navigateTo('/register')}>
-                        <Text style={styles.registerButtonText}>Register</Text>
+                        <Text style={styles.registerButtonText}>Registration</Text>
                     </TouchableOpacity>
                 </View>
             </View>
