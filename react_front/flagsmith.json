@@ -1,0 +1,21 @@
+{
+  "api": "https://edge.api.flagsmith.com/api/v1/",
+  "flags": {
+    "restoran_choiser": {
+      "id": 142550,
+      "enabled": false,
+      "value": null
+    }
+  },
+  "evaluationContext": {
+    "identity": {
+      "identifier": "4e138fe15d724c549f396fc00b185fb2",
+      "traits": {}
+    },
+    "environment": {
+      "apiKey": "iBPwcngpEiMQhJbmAsUfLy"
+    }
+  },
+  "identity": "4e138fe15d724c549f396fc00b185fb2",
+  "evaluationEvent": null
+}

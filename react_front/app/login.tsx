@@ -5,6 +5,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {Picker} from "@react-native-picker/picker";
 import React, {useState} from 'react';
 import {useAuth} from './AuthContext';
+import {useFlags} from "react-native-flagsmith/react";
 
 interface FormData {
     telegram: string;
@@ -29,6 +30,9 @@ export default function LoginScreen() {
 
     const router = useRouter();
     const { setToken } = useAuth();
+
+    const flags = useFlags(['restoran_choiser']);
+    const isRestoranChoiserEnabled = flags.restoran_choiser.enabled;
 
     const onSubmit = async (data: FormData): Promise<void> => {
         setResponse(null);
@@ -85,15 +89,16 @@ export default function LoginScreen() {
         <SafeAreaView style={styles.main}>
             <View style={styles.header}>
                 <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={selectedValue}
-                        style={styles.picker}
-                        onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
-                    >
-                        <Picker.Item label="Ресторан" value="ресторан" />
-                        <Picker.Item label="Кафе" value="кафе" />
-                        <Picker.Item label="Бар" value="бар" />
-                    </Picker>
+                    { isRestoranChoiserEnabled &&
+                        <Picker
+                            selectedValue={selectedValue}
+                            style={styles.picker}
+                            onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
+                        >
+                            <Picker.Item label="Ресторан" value="ресторан" />
+                            <Picker.Item label="Кафе" value="кафе" />
+                            <Picker.Item label="Бар" value="бар" />
+                        </Picker>}
                 </View>
 
                 <View style={styles.buttonGroup}>
