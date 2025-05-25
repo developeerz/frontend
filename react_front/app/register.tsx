@@ -4,6 +4,7 @@ import {Controller, useForm} from 'react-hook-form';
 import {Picker} from '@react-native-picker/picker';
 import React, {useState} from 'react';
 import {ExternalPathString, Href, Link, RelativePathString, UnknownInputParams, useRouter} from "expo-router";
+import {useFlags} from "react-native-flagsmith/react";
 
 interface FormData {
     firstname: string;
@@ -33,6 +34,9 @@ export default function RegisterScreen() {
     const [telegramId, setTelegram] = useState<string>('');
 
     const router = useRouter();
+
+    const flags = useFlags(['restoran_choiser']);
+    const isRestoranChoiserEnabled = flags.restoran_choiser.enabled;
 
     const handleVerifyCode = async () => {
         try {
@@ -120,6 +124,7 @@ export default function RegisterScreen() {
         <SafeAreaView style={styles.main}>
             <View style={styles.header}>
                 <View style={styles.pickerContainer}>
+                    { isRestoranChoiserEnabled &&
                     <Picker
                         selectedValue={selectedValue}
                         style={styles.picker}
@@ -128,7 +133,7 @@ export default function RegisterScreen() {
                         <Picker.Item label="Ресторан" value="ресторан" />
                         <Picker.Item label="Кафе" value="кафе" />
                         <Picker.Item label="Бар" value="бар" />
-                    </Picker>
+                    </Picker>}
                 </View>
 
                 <View style={styles.buttonGroup}>

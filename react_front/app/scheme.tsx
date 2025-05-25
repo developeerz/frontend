@@ -13,6 +13,7 @@ import 'react-time-picker/dist/TimePicker.css';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import {format} from 'date-fns';
+import {useFlags} from "react-native-flagsmith/react";
 
 interface FreeTimeRange {
     id: string;
@@ -213,6 +214,9 @@ export default function RegisterScreen() {
 
     const minX = Math.min(...boundary.map(p => p.x));
     const minY = Math.min(...boundary.map(p => p.y));
+
+    const flags = useFlags(['restoran_choiser']);
+    const isRestoranChoiserEnabled = flags.restoran_choiser.enabled;
 
     const renderTableSvg = (table: Table) => {
         const { position, shape } = table;
@@ -525,15 +529,16 @@ export default function RegisterScreen() {
         <SafeAreaView style={styles.main}>
             <View style={styles.header}>
                 <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={selectedValue}
-                        style={styles.picker}
-                        onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
-                    >
-                        <Picker.Item label="Ресторан" value="ресторан" />
-                        <Picker.Item label="Кафе" value="кафе" />
-                        <Picker.Item label="Бар" value="бар" />
-                    </Picker>
+                    { isRestoranChoiserEnabled &&
+                        <Picker
+                            selectedValue={selectedValue}
+                            style={styles.picker}
+                            onValueChange={(itemValue: React.SetStateAction<string>) => setSelectedValue(itemValue)}
+                        >
+                            <Picker.Item label="Ресторан" value="ресторан" />
+                            <Picker.Item label="Кафе" value="кафе" />
+                            <Picker.Item label="Бар" value="бар" />
+                        </Picker>}
                 </View>
 
                 <View style={styles.buttonGroup}>
